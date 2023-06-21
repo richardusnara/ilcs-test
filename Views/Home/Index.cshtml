@@ -1,0 +1,111 @@
+﻿@{
+    ViewData["Title"] = "Shipping Calculator";
+}
+
+<h1>Shipping Calculator</h1>
+
+<form id="shipping-form">
+    <div class="form-group">
+        <label for="country">Negara:</label>
+        <input type="text" class="form-control" id="country" name="country" autocomplete="off" />
+    </div>
+    <div class="form-group">
+        <label for="port">Pelabuhan:</label>
+        <input type="text" class="form-control" id="port" name="port" autocomplete="off" />
+    </div>
+    <div class="form-group">
+        <label for="hsCode">Kode Barang:</label>
+        <input type="text" class="form-control" id="hsCode" name="hsCode" autocomplete="off" />
+    </div>
+    <div class="form-group">
+        <label for="price">Price:</label>
+        <input type="number" class="form-control" id="price" name="price" step="any" />
+    </div>
+    <div class="form-group">
+        <label for="tariffPercentage">Tarif Bea Masuk:</label>
+        <input type="number" class="form-control" id="tariffPercentage" name="tariffPercentage" step="any" />
+    </div>
+    <button type="submit" class="btn btn-primary">Calculate Shipping</button>
+</form>
+
+<div id="result" class="mt-4" style="display: none;">
+    <h3>Shipping Calculation Result:</h3>
+    <p>Customs Tariff Amount: <span id="tariffAmount"></span></p>
+    <p>Total Price: <span id="totalPrice"></span></p>
+</div>
+
+@section scripts {
+    <script>
+        $(function () {
+            $('#country').autocomplete({
+                source: function (request, response) {
+                    $.ajax({
+                        url: 'https://insw-dev.ilcs.co.id/n/negara?ur_negara',
+                        dataType: 'json',
+                        data: {
+                            term: request.term
+                        },
+                        success: function (data) {
+                            response(data);
+                        }
+                    });
+                },
+                minLength: 3
+            });
+
+            $('#port').autocomplete({
+                source: function (request, response) {
+                    var country = $('#country').val();
+                    $.ajax({
+                        url: 'https://insw-dev.ilcs.co.id/n/pelabuhan',
+                        dataType: 'json',
+                        data: {
+                            country: country,
+                            term: request.term
+                        },
+                        success: function (data) {
+                            response(data);
+                        }
+                    });
+                },
+                minLength: 3
+            });
+
+            $('#hsCode').autocomplete({
+                source: function (request, response) {
+                    $.ajax({
+                        url: 'https://insw-dev.ilcs.co.id/n/barang?hs_code=02044200',
+                        dataType: 'json',
+                        data: {
+                            hsCode: request.term
+                        },
+                        success: function (data) {
+                            response(data);
+                        }
+                    });
+                },
+                minLength: 3
+            });
+
+            $('#shipping-form').on('submit', function (e) {
+                e.preventDefault();
+                var price = parseFloat($('#price').val());
+                var tariffPercentage = parseFloat($('#tariffPercentage').val());
+
+                $.ajax({
+                    url: 'https://insw-dev.ilcs.co.id/n/tarif?hs_code=10079000',
+                    type: 'POST',
+                    data: {
+                        price: price,
+                        tariffPercentage: tariffPercentage
+                    },
+                    success: function (data) {
+                        $('#tariffAmount').text(data.tariffAmount);
+                        $('#totalPrice').text(data.totalPrice);
+                        $('#result').show();
+                    }
+                });
+            });
+        });
+    </script>
+}
